@@ -288,11 +288,20 @@ Responda ESTRITAMENTE em formato JSON com a seguinte estrutura:
     throw lastError || new Error('Não foi possível conectar aos modelos do Gemini.');
   } catch (error) {
     console.error('Erro na chamada ao Gemini API:', error);
-    // Em caso de falha de conexão, timeout ou quota, recorre ao modo simulado inteligente imediatamente
+    let userWarning = 'Aviso: ';
+    const msg = (error.message || '').toLowerCase();
+    if (msg.includes('quota') || msg.includes('exhausted') || msg.includes('429')) {
+      userWarning += 'Limite temporário da cota gratuita da API Gemini do Google atingido. Sua prova foi gerada imediatamente pelo super banco oficial do ProvaLAB!';
+    } else if (msg.includes('demand') || msg.includes('sobrecarregado') || msg.includes('503')) {
+      userWarning += 'Servidores do Google em alta demanda no momento. Sua prova foi gerada imediatamente pelo super banco oficial do ProvaLAB!';
+    } else {
+      userWarning += `${error.message || 'Falha de conexão com a IA.'} Avaliação carregada do banco oficial do ProvaLAB!`;
+    }
+
     return {
       questions: getMockExam(subject, topics, totalQuestions, difficulty, grade),
       source: 'offline_fallback',
-      warning: `Aviso: ${error.message} Seu simulado foi carregado pelo banco inteligente do ProvaLAB!`
+      warning: userWarning
     };
   }
 }
