@@ -1,0 +1,6 @@
+{
+  "summary": "Plano de implementação da primeira versão do aplicativo mobile (Android/PWA) de geração de provas e simulados escolares para o 6º ano do Ensino Fundamental, com suporte à API do Google Gemini, banco de dados local no dispositivo e validação de questões pendentes.",
+  "updatedAt": "2026-09-14T20:22:07.287449400Z",
+  "requestFeedback": true,
+  "userFacing": true
+}
