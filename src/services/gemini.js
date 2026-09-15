@@ -47,29 +47,27 @@ export async function getAvailableGeminiModels(apiKey) {
               !n.includes('imagen') &&
               !n.includes('image') &&
               !n.includes('vision') &&
+              !n.includes('latest') &&
               !n.includes('3.') &&
               !n.includes('preview') &&
               !n.includes('exp') &&
               !n.includes('2.5-flash')
             );
           })
-          .map((m) => {
-            const cleanName = m.name.replace(/^models\//, '');
-            return {
-              name: cleanName,
-              version: cleanName.includes('2.0') ? 'v1beta' : 'v1'
-            };
-          });
+          .map((m) => ({
+            name: m.name.replace(/^models\//, ''),
+            version: 'v1beta'
+          }));
 
         if (supported.length > 0) {
           const sorted = supported.sort((a, b) => {
             const aName = a.name.toLowerCase();
             const bName = b.name.toLowerCase();
             const score = (name) => {
-              if (name === 'gemini-2.0-flash') return 20;
-              if (name === 'gemini-1.5-flash') return 18;
-              if (name === 'gemini-2.0-flash-lite') return 16;
-              if (name === 'gemini-1.5-flash-8b') return 14;
+              if (name === 'gemini-2.0-flash') return 50;
+              if (name === 'gemini-1.5-flash') return 40;
+              if (name === 'gemini-2.0-flash-lite') return 30;
+              if (name === 'gemini-1.5-flash-8b') return 20;
               if (name === 'gemini-1.5-pro') return 10;
               if (name.includes('flash')) return 8;
               if (name.includes('pro')) return 6;
@@ -86,11 +84,10 @@ export async function getAvailableGeminiModels(apiKey) {
     console.warn('Não foi possível listar modelos em v1beta:', err.message);
   }
 
-  // 2. Fallback padrão rápido com modelos estáveis
+  // 2. Fallback padrão rápido com modelos estáveis em v1beta
   const defaultList = [
     { name: 'gemini-2.0-flash', version: 'v1beta' },
-    { name: 'gemini-1.5-flash', version: 'v1' },
-    { name: 'gemini-2.0-flash-lite', version: 'v1beta' },
+    { name: 'gemini-1.5-flash', version: 'v1beta' },
     { name: 'gemini-1.5-flash-8b', version: 'v1beta' }
   ];
   cachedModelsList = defaultList;
@@ -200,12 +197,13 @@ Responda ESTRITAMENTE em formato JSON com a seguinte estrutura:
 
     for (const candidate of topCandidates) {
       const modelName = candidate.name;
-      const apiVersion = candidate.version || 'v1beta';
+      // Garante sempre o endpoint oficial v1beta do Google Generative Language
+      const apiVersion = 'v1beta';
 
       try {
         const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
         
-        // Timeout de 14 segundos por requisição ao Google
+        // Timeout de 16 segundos por requisição ao Google
         const response = await fetch(url, {
           method: 'POST',
           headers: {
@@ -298,6 +296,8 @@ Responda ESTRITAMENTE em formato JSON com a seguinte estrutura:
       userWarning += 'Limite temporário da cota gratuita da API Gemini do Google atingido. Sua prova foi gerada imediatamente pelo super banco oficial do ProvaLAB!';
     } else if (msg.includes('demand') || msg.includes('sobrecarregado') || msg.includes('503')) {
       userWarning += 'Servidores do Google em alta demanda no momento. Sua prova foi gerada imediatamente pelo super banco oficial do ProvaLAB!';
+    } else if (msg.includes('not found') || msg.includes('supported') || msg.includes('404')) {
+      userWarning += 'Modelo de IA temporariamente indisponível no Google. Sua prova foi gerada com sucesso pelo super banco oficial do ProvaLAB!';
     } else {
       userWarning += `${error.message || 'Falha de conexão com a IA.'} Avaliação carregada do banco oficial do ProvaLAB!`;
     }
