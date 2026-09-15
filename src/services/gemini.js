@@ -45,23 +45,27 @@ export async function getAvailableGeminiModels(apiKey) {
               !n.includes('audio') &&
               !n.includes('embed') &&
               !n.includes('imagen') &&
+              !n.includes('image') &&
+              !n.includes('vision') &&
+              !n.includes('3.') &&
+              !n.includes('preview') &&
+              !n.includes('exp') &&
               !n.includes('2.5-flash')
             );
           })
-          .map((m) => ({
-            name: m.name.replace(/^models\//, ''),
-            version: 'v1beta'
-          }));
+          .map((m) => {
+            const cleanName = m.name.replace(/^models\//, '');
+            return {
+              name: cleanName,
+              version: cleanName.includes('2.0') ? 'v1beta' : 'v1'
+            };
+          });
 
         if (supported.length > 0) {
           const sorted = supported.sort((a, b) => {
             const aName = a.name.toLowerCase();
             const bName = b.name.toLowerCase();
             const score = (name) => {
-              // Desprioriza modelos experimentais e previews que sofrem com 503 na cota gratuita
-              if (name.includes('preview') || name.includes('exp') || name.includes('latest')) {
-                return 2;
-              }
               if (name === 'gemini-2.0-flash') return 20;
               if (name === 'gemini-1.5-flash') return 18;
               if (name === 'gemini-2.0-flash-lite') return 16;
