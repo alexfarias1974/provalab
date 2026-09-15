@@ -55,7 +55,7 @@ export function App() {
     if (config.grade) setSelectedGrade(config.grade);
 
     try {
-      // Limite máximo de 18 segundos de espera para o usuário
+      // Limite confortável de espera para a IA responder (28 segundos)
       const timeoutPromise = new Promise((resolve) => {
         setTimeout(() => {
           resolve({
@@ -63,7 +63,7 @@ export function App() {
             source: 'offline_fallback',
             warning: 'O Google demorou para responder. Carregamos o simulado instantaneamente do banco de questões do ProvaLAB para você começar já!'
           });
-        }, 18000);
+        }, 28000);
       });
 
       const response = await Promise.race([generateExam(config), timeoutPromise]);

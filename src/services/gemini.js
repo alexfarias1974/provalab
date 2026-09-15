@@ -58,13 +58,17 @@ export async function getAvailableGeminiModels(apiKey) {
             const aName = a.name.toLowerCase();
             const bName = b.name.toLowerCase();
             const score = (name) => {
-              if (name === 'gemini-2.0-flash') return 10;
-              if (name.includes('2.0-flash-lite')) return 9;
-              if (name.includes('2.0-flash')) return 8;
-              if (name === 'gemini-1.5-flash-latest') return 7;
-              if (name === 'gemini-1.5-flash') return 6;
-              if (name.includes('flash')) return 5;
-              if (name.includes('pro')) return 4;
+              // Desprioriza modelos experimentais e previews que sofrem com 503 na cota gratuita
+              if (name.includes('preview') || name.includes('exp') || name.includes('latest')) {
+                return 2;
+              }
+              if (name === 'gemini-2.0-flash') return 20;
+              if (name === 'gemini-1.5-flash') return 18;
+              if (name === 'gemini-2.0-flash-lite') return 16;
+              if (name === 'gemini-1.5-flash-8b') return 14;
+              if (name === 'gemini-1.5-pro') return 10;
+              if (name.includes('flash')) return 8;
+              if (name.includes('pro')) return 6;
               return 1;
             };
             return score(bName) - score(aName);
@@ -78,11 +82,12 @@ export async function getAvailableGeminiModels(apiKey) {
     console.warn('Não foi possível listar modelos em v1beta:', err.message);
   }
 
-  // 2. Fallback padrão rápido
+  // 2. Fallback padrão rápido com modelos estáveis
   const defaultList = [
     { name: 'gemini-2.0-flash', version: 'v1beta' },
+    { name: 'gemini-1.5-flash', version: 'v1' },
     { name: 'gemini-2.0-flash-lite', version: 'v1beta' },
-    { name: 'gemini-1.5-flash', version: 'v1' }
+    { name: 'gemini-1.5-flash-8b', version: 'v1beta' }
   ];
   cachedModelsList = defaultList;
   return defaultList;
@@ -215,17 +220,12 @@ Responda ESTRITAMENTE em formato JSON com a seguinte estrutura:
               responseMimeType: 'application/json'
             }
           }),
-          signal: AbortSignal.timeout(14000)
+          signal: AbortSignal.timeout(16000)
         });
 
         if (!response.ok) {
           const errData = await response.json().catch(() => ({}));
           const errMsg = errData.error?.message || `Erro HTTP ${response.status}`;
-          
-          // Se o Google estiver com alta demanda (503) ou cota (429), interrompe para não deixar o usuário esperando
-          if (response.status === 503 || response.status === 429 || errMsg.toLowerCase().includes('demand') || errMsg.toLowerCase().includes('quota')) {
-            throw new Error(`Google Gemini temporariamente sobrecarregado (${errMsg}). Ativando banco de questões instantâneo.`);
-          }
           throw new Error(errMsg);
         }
 
@@ -281,10 +281,7 @@ Responda ESTRITAMENTE em formato JSON com a seguinte estrutura:
       } catch (err) {
         console.warn(`Tentativa com ${modelName} (${apiVersion}) falhou:`, err.message);
         lastError = err;
-        // Se for erro de alta demanda, não tenta outros modelos para economizar tempo do usuário
-        if (err.message.includes('sobrecarregado') || err.message.includes('demand')) {
-          break;
-        }
+        // Continua para o próximo modelo candidato da lista
       }
     }
 
